@@ -1,0 +1,60 @@
+{\rtf1\ansi\ansicpg932\cocoartf2867
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 import os\
+from supabase import create_client, Client\
+import pandas as pd\
+from sklearn.linear_model import LinearRegression\
+\
+# 1. \uc0\u29872 \u22659 \u22793 \u25968 \u12398 \u35501 \u12415 \u36796 \u12415  (GitHub Actions\u12398 \u35373 \u23450 \u12363 \u12425 \u33258 \u21205 \u12391 \u35501 \u12415 \u36796 \u12414 \u12428 \u12414 \u12377 )\
+SUPABASE_URL = os.environ.get("SUPABASE_URL")\
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")\
+\
+# 2. Supabase\uc0\u12408 \u12398 \u25509 \u32154 \
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)\
+\
+# 3. \uc0\u12487 \u12540 \u12479 \u12398 \u21462 \u24471 \
+response = supabase.table("sales_data").select("*").execute()\
+df = pd.DataFrame(response.data)\
+\
+# 4. \uc0\u22825 \u27671 \u12434 \u25968 \u20516 \u12395 \u22793 \u25563 \u12375 \u12390 AI\u12398 \u23398 \u32722 \u28310 \u20633 \
+df['is_sunny'] = df['weather'].apply(lambda x: 1 if x == '\uc0\u26228 \u12428 ' else 0)\
+\
+X = df[['is_sunny']]\
+y = df['sales_count']\
+\
+# 5. AI\uc0\u12514 \u12487 \u12523 \u12398 \u23398 \u32722 \
+model = LinearRegression()\
+model.fit(X, y)\
+\
+# 6. \uc0\u26126 \u26085 \u12398 \u20104 \u28204 \u65288 \u26228 \u12428 \u65309 1\u12392 \u12375 \u12390 \u20104 \u28204 \u65289 \
+predicted_sales = int(model.predict([[1]])[0])\
+\
+# 7. \uc0\u20385 \u26684 \u12398 \u27770 \u23450 \u12525 \u12472 \u12483 \u12463 \
+prepared_count = 50  # \uc0\u20181 \u36796 \u12415 \u25968 \
+estimated_waste = prepared_count - predicted_sales\
+\
+discount_rate = 0.0\
+if estimated_waste > 15:\
+    discount_rate = 0.30\
+elif estimated_waste > 5:\
+    discount_rate = 0.15\
+\
+cost_price = 500\
+optimal_price = int(cost_price * (1 - discount_rate))\
+\
+# 8. \uc0\u32080 \u26524 \u12434 Supabase\u12395 \u20445 \u23384 \
+new_schedule = \{\
+    "date": "2026-08-08",\
+    "menu_name": "\uc0\u21776 \u25562 \u12370 \u23450 \u39135 ",\
+    "suggested_price": optimal_price,\
+    "discount_rate": discount_rate\
+\}\
+\
+supabase.table("pricing_schedule").insert(new_schedule).execute()\
+\
+print("\uc0\u23436 \u20102 : AI\u12364 \u20385 \u26684 \u12434 \u35336 \u31639 \u12375 \u12390 \u20445 \u23384 \u12375 \u12414 \u12375 \u12383 ")}
