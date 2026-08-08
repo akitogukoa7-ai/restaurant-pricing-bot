@@ -10,8 +10,8 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 st.title("飲食店メニュー価格最適化ダッシュボード")
 
-# 1. データ取得
-response = supabase.table("menu_prices").select("*").execute()
+# テーブル名を「メニュー価格」に変更
+response = supabase.table("メニュー価格").select("*").execute()
 data = response.data
 
 if data:
@@ -19,10 +19,10 @@ if data:
     
     st.subheader("メニュー一覧")
     
-    # 検索機能
+    # 検索機能（カラム名を「アイテム名」に変更）
     search_query = st.text_input("メニュー名で検索")
     if search_query:
-        filtered_df = df[df['item_name'].str.contains(search_query, na=False)]
+        filtered_df = df[df['アイテム名'].str.contains(search_query, na=False)]
     else:
         filtered_df = df
         
