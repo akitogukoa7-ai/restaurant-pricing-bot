@@ -12,7 +12,7 @@ st.title("🍽️ 飲食店メニュー価格最適化ロボット")
 response = supabase.table("menu_prices").select("*").execute()
 df = pd.DataFrame(response.data)
 
-# 2. 検索・フィルター機能の追加（商品数が増えたとき用）
+# 2. 検索・フィルター機能の追加
 st.subheader("メニュー価格・在庫の編集")
 search_query = st.text_input("🔍 メニュー名で検索", "")
 if search_query:
@@ -20,7 +20,6 @@ if search_query:
 else:
     filtered_df = df
 
-# 編集可能なテーブルを表示
 edited_df = st.data_editor(filtered_df, num_rows="dynamic", key="menu_editor")
 
 # 3. 更新ボタン
@@ -39,9 +38,7 @@ st.divider()
 st.subheader("🤖 AI価格最適化・ダイナミックプライシング提案")
 
 if not df.empty:
-    # 絞り込み用のチェックボックス
     only_alerts = st.checkbox("🚨 値下げ・処分が必要なメニューのみ表示する", value=False)
-    
     st.markdown("在庫状況や賞味期限（残り日数）をもとに、AIが最適な価格とアクションを提案します。")
     
     for index, row in df.iterrows():
@@ -69,7 +66,6 @@ if not df.empty:
             suggestion_type = "normal"
             suggestion = f"✨ **【適正価格】** 現在の価格設定は安定しています。このまま様子を見ましょう。"
             
-        # 「要対応のみ表示」がチェックされている場合は、適正価格のものをスキップ
         if only_alerts and suggestion_type == "normal":
             continue
             
@@ -78,7 +74,8 @@ if not df.empty:
             cols = st.columns(3)
             cols[0].metric("現在の価格", f"¥{current}")
             cols[1].metric("推奨価格", f"¥{suggested_price}")
-            cols[2].metric("在庫 / 期限", f"{stock}個 / 残り{expiry}日")
+            # 文字切れを防ぐために短縮表示に修正
+            cols[2].metric("在庫 / 期限", f"{stock}個 / {expiry}日")
             st.markdown(suggestion)
 
 # 5. グラフセクション
