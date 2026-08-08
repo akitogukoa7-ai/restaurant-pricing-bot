@@ -16,11 +16,12 @@ df = pd.DataFrame(response.data)
 st.subheader("メニュー価格・在庫の編集")
 edited_df = st.data_editor(df, num_rows="dynamic")
 
-# 3. 更新ボタン
+# 3. 更新ボタン（current_priceの保存漏れも修正）
 if st.button("保存する"):
     for index, row in edited_df.iterrows():
         supabase.table("menu_prices").update({
             "base_price": int(row['base_price']),
+            "current_price": int(row['current_price']),
             "stock_count": int(row['stock_count'])
         }).eq("id", row['id']).execute()
     st.success("データベースを更新しました！")
@@ -40,16 +41,16 @@ if not df.empty:
         base = row.get('base_price', 1000)
         current = row.get('current_price', base)
         
-        # AIの提案ロジック
-        if expiry <= 2 and stock > 5:
+        # AIの提案ロジック（緊急度の高い順に上から評価するように修正）
+        if expiry <= 1:
+            suggested_price = int(base * 0.5)
+            suggestion = f"⚠️ **【要処分】** 本日期限切れ間近です。半額（¥{suggested_price}）で早期完売を目指してください。"
+        elif expiry <= 2 and stock > 5:
             suggested_price = int(base * 0.7)
             suggestion = f"🚨 **【緊急値下げ推奨】** 賞味期限が残り{expiry}日で在庫が{stock}個あります。廃棄ロスを防ぐため、30%OFF（¥{suggested_price}）でのタイムセールを強く推奨します。"
         elif stock >= 10:
             suggested_price = int(base * 0.85)
             suggestion = f"📦 **【在庫過多】** 在庫が多めです。15%OFF（¥{suggested_price}）にして回転率を上げましょう。"
-        elif expiry <= 1:
-            suggested_price = int(base * 0.5)
-            suggestion = f"⚠️ **【要処分】** 本日期限切れ間近です。半額（¥{suggested_price}）で早期完売を目指してください。"
         else:
             suggested_price = base
             suggestion = f"✨ **【適正価格】** 現在の価格設定は安定しています。このまま様子を見ましょう。"
