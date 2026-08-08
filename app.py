@@ -43,7 +43,7 @@ with st.sidebar:
 
 st.title("🍽️ 飲食店メニュー価格最適化ロボット")
 
-# 1. データの取得（テーブル名を「menu_prices」に変更）
+# 1. データの取得
 response = supabase.table("menu_prices").select("*").execute()
 df = pd.DataFrame(response.data)
 
