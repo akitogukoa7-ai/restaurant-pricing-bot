@@ -3,12 +3,16 @@ from supabase import create_client
 import pandas as pd
 import requests
 
-url = st.secrets["SUPABASE_URL"]
-key = st.secrets["SUPABASE_KEY"]
+# Supabaseの設定（エラーが出ないよう安全に取得）
+url = st.secrets.get("SUPABASE_URL", "")
+key = st.secrets.get("SUPABASE_KEY", "")
 
-# .get() を使っているので、シークレットが未設定でもエラーで落ちません
 line_token = st.secrets.get("LINE_TOKEN", "")
 line_user_id = st.secrets.get("LINE_USER_ID", "")
+
+if not url or not key:
+    st.error("⚠️ StreamlitのSecretsに SUPABASE_URL と SUPABASE_KEY を設定してください。")
+    st.stop()
 
 supabase = create_client(url, key)
 
@@ -37,10 +41,11 @@ with st.sidebar:
         res, err = send_line_push(test_msg)
         if err:
             st.error(err)
-        elif res.status_code == 200:
+        elif res and res.status_code == 200:
             st.success("LINEにテスト送信しました！")
         else:
-            st.error(f"送信失敗: {res.status_code}")
+            code = res.status_code if res else "不明"
+            st.error(f"送信失敗: {code}")
 
 st.title("🍽️ 飲食店メニュー価格最適化ロボット")
 
@@ -50,7 +55,7 @@ try:
     df = pd.DataFrame(response.data)
 except Exception as e:
     df = pd.DataFrame()
-    st.error(f"データベース接続エラー: Supabaseのテーブル名が 'menu_prices' になっているか確認してください。")
+    st.warning("データベースからデータを取得できませんでした。テーブル名が 'menu_prices' になっているか確認してください。")
 
 # 2. 検索・フィルター機能
 st.subheader("メニュー価格・在庫の編集")
@@ -64,7 +69,7 @@ if not filtered_df.empty:
     edited_df = st.data_editor(filtered_df, num_rows="dynamic", key="menu_editor")
 else:
     edited_df = pd.DataFrame()
-    st.info("データがありません。Supabaseの 'menu_prices' テーブルにデータを登録してください。")
+    st.info("データがありません。")
 
 # 3. 更新ボタン
 if st.button("変更を保存する") and not edited_df.empty:
