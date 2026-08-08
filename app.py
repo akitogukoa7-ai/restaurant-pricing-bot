@@ -1,17 +1,21 @@
 import streamlit as st
 from supabase import create_client
 import pandas as pd
-import requests # 追加
+import requests
 
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
-line_token = st.secrets["LINE_TOKEN"]
-line_user_id = st.secrets["LINE_USER_ID"]
+
+line_token = st.secrets.get("LINE_TOKEN", "")
+line_user_id = st.secrets.get("LINE_USER_ID", "")
 
 supabase = create_client(url, key)
 
 # --- LINE通知送信関数 ---
 def send_line_push(message):
+    if not line_token or not line_user_id:
+        return None, "LINEのトークンまたはユーザーIDがSecretsに設定されていません。"
+    
     api_url = "https://api.line.me/v2/bot/message/push"
     headers = {
         "Content-Type": "application/json",
@@ -22,39 +26,45 @@ def send_line_push(message):
         "messages": [{"type": "text", "text": message}]
     }
     response = requests.post(api_url, headers=headers, json=payload)
-    return response
+    return response, None
 
 # --- サイドバーに管理者ツールを追加 ---
 with st.sidebar:
     st.subheader("🛠️ 管理者ツール")
     if st.button("🔔 LINEテスト通知を送信"):
         test_msg = "これは飲食店メニュー価格最適化ロボットのテスト通知です。"
-        res = send_line_push(test_msg)
-        if res.status_code == 200:
+        res, err = send_line_push(test_msg)
+        if err:
+            st.error(err)
+        elif res.status_code == 200:
             st.success("LINEにテスト送信しました！")
         else:
-            st.error(f"送信失敗: {res.text}")
+            st.error(f"送信失敗: {res.status_code}")
 
 st.title("🍽️ 飲食店メニュー価格最適化ロボット")
 
-# 1. データの取得
-response = supabase.table("menu_prices").select("*").execute()
+# 1. データの取得（テーブル名を「メニュー価格」に変更）
+response = supabase.table("メニュー価格").select("*").execute()
 df = pd.DataFrame(response.data)
 
 # 2. 検索・フィルター機能
 st.subheader("メニュー価格・在庫の編集")
 search_query = st.text_input("🔍 メニュー名で検索", "")
-if search_query:
+if search_query and not df.empty and 'item_name' in df.columns:
     filtered_df = df[df['item_name'].str.contains(search_query, na=False)]
 else:
     filtered_df = df
 
-edited_df = st.data_editor(filtered_df, num_rows="dynamic", key="menu_editor")
+if not filtered_df.empty:
+    edited_df = st.data_editor(filtered_df, num_rows="dynamic", key="menu_editor")
+else:
+    edited_df = pd.DataFrame()
+    st.info("データがありません。")
 
 # 3. 更新ボタン
-if st.button("変更を保存する"):
+if st.button("変更を保存する") and not edited_df.empty:
     for index, row in edited_df.iterrows():
-        supabase.table("menu_prices").update({
+        supabase.table("メニュー価格").update({
             "base_price": int(row['base_price']),
             "current_price": int(row['current_price']),
             "stock_count": int(row['stock_count'])
