@@ -24,3 +24,25 @@ if st.button("保存する"):
             "stock_count": int(row['stock_count'])
         }).eq("id", row['id']).execute()
     st.success("データベースを更新しました！")
+    st.rerun()
+
+# 4. グラフや分析機能の追加
+st.divider()
+st.subheader("📈 データ分析・ビジュアル表示")
+
+if not df.empty and 'item_name' in df.columns:
+    # グラフ描画用にメニュー名をインデックスに設定
+    chart_df = df.set_index('item_name')
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("### 📦 メニュー別 在庫数")
+        if 'stock_count' in chart_df.columns:
+            st.bar_chart(chart_df['stock_count'])
+            
+    with col2:
+        st.markdown("### 💰 メニュー別 価格比較")
+        price_cols = [c for c in ['base_price', 'current_price'] if c in chart_df.columns]
+        if price_cols:
+            st.bar_chart(chart_df[price_cols])
