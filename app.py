@@ -12,12 +12,19 @@ st.title("🍽️ 飲食店メニュー価格最適化ロボット")
 response = supabase.table("menu_prices").select("*").execute()
 df = pd.DataFrame(response.data)
 
-# 2. 編集可能なテーブルを表示
+# 2. 検索・フィルター機能の追加（商品数が増えたとき用）
 st.subheader("メニュー価格・在庫の編集")
-edited_df = st.data_editor(df, num_rows="dynamic")
+search_query = st.text_input("🔍 メニュー名で検索", "")
+if search_query:
+    filtered_df = df[df['item_name'].str.contains(search_query, na=False)]
+else:
+    filtered_df = df
 
-# 3. 更新ボタン（current_priceの保存漏れも修正）
-if st.button("保存する"):
+# 編集可能なテーブルを表示
+edited_df = st.data_editor(filtered_df, num_rows="dynamic", key="menu_editor")
+
+# 3. 更新ボタン
+if st.button("変更を保存する"):
     for index, row in edited_df.iterrows():
         supabase.table("menu_prices").update({
             "base_price": int(row['base_price']),
@@ -32,6 +39,9 @@ st.divider()
 st.subheader("🤖 AI価格最適化・ダイナミックプライシング提案")
 
 if not df.empty:
+    # 絞り込み用のチェックボックス
+    only_alerts = st.checkbox("🚨 値下げ・処分が必要なメニューのみ表示する", value=False)
+    
     st.markdown("在庫状況や賞味期限（残り日数）をもとに、AIが最適な価格とアクションを提案します。")
     
     for index, row in df.iterrows():
@@ -41,19 +51,27 @@ if not df.empty:
         base = row.get('base_price', 1000)
         current = row.get('current_price', base)
         
-        # AIの提案ロジック（緊急度の高い順に上から評価するように修正）
+        # AIの提案ロジック
         if expiry <= 1:
             suggested_price = int(base * 0.5)
+            suggestion_type = "alert"
             suggestion = f"⚠️ **【要処分】** 本日期限切れ間近です。半額（¥{suggested_price}）で早期完売を目指してください。"
         elif expiry <= 2 and stock > 5:
             suggested_price = int(base * 0.7)
+            suggestion_type = "alert"
             suggestion = f"🚨 **【緊急値下げ推奨】** 賞味期限が残り{expiry}日で在庫が{stock}個あります。廃棄ロスを防ぐため、30%OFF（¥{suggested_price}）でのタイムセールを強く推奨します。"
         elif stock >= 10:
             suggested_price = int(base * 0.85)
+            suggestion_type = "warning"
             suggestion = f"📦 **【在庫過多】** 在庫が多めです。15%OFF（¥{suggested_price}）にして回転率を上げましょう。"
         else:
             suggested_price = base
+            suggestion_type = "normal"
             suggestion = f"✨ **【適正価格】** 現在の価格設定は安定しています。このまま様子を見ましょう。"
+            
+        # 「要対応のみ表示」がチェックされている場合は、適正価格のものをスキップ
+        if only_alerts and suggestion_type == "normal":
+            continue
             
         with st.container(border=True):
             st.markdown(f"### 🏷️ {item}")
