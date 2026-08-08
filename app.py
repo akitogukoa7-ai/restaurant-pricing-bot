@@ -3,7 +3,7 @@ from supabase import create_client
 import pandas as pd
 import requests
 
-# Supabaseの設定（エラーが出ないよう安全に取得）
+# Supabaseの設定（安全に取得）
 url = st.secrets.get("SUPABASE_URL", "")
 key = st.secrets.get("SUPABASE_KEY", "")
 
@@ -69,7 +69,7 @@ if not filtered_df.empty:
     edited_df = st.data_editor(filtered_df, num_rows="dynamic", key="menu_editor")
 else:
     edited_df = pd.DataFrame()
-    st.info("データがありません。")
+    st.info("データがありません。（Supabaseの 'menu_prices' テーブルにデータを追加してください）")
 
 # 3. 更新ボタン
 if st.button("変更を保存する") and not edited_df.empty:
