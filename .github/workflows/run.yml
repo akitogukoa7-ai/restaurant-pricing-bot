@@ -2,12 +2,13 @@ name: ボット 2号機を実行
 
 on:
   schedule:
-    - cron: '0 23 * * *' # 毎日日本時間 朝8:00（UTC 23:00）に実行
-  workflow_dispatch: # 手動でも実行できるようにする
+    - cron: '0 9 * * *'
+  workflow_dispatch:
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
+
     steps:
       - name: チェックアウトコード
         uses: actions/checkout@v4
@@ -26,5 +27,4 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-        run: |
-          python main.py
+        run: python main.py
