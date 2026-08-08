@@ -6,6 +6,7 @@ import requests
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 
+# .get() を使っているので、シークレットが未設定でもエラーで落ちません
 line_token = st.secrets.get("LINE_TOKEN", "")
 line_user_id = st.secrets.get("LINE_USER_ID", "")
 
@@ -44,8 +45,12 @@ with st.sidebar:
 st.title("🍽️ 飲食店メニュー価格最適化ロボット")
 
 # 1. データの取得
-response = supabase.table("menu_prices").select("*").execute()
-df = pd.DataFrame(response.data)
+try:
+    response = supabase.table("menu_prices").select("*").execute()
+    df = pd.DataFrame(response.data)
+except Exception as e:
+    df = pd.DataFrame()
+    st.error(f"データベース接続エラー: Supabaseのテーブル名が 'menu_prices' になっているか確認してください。")
 
 # 2. 検索・フィルター機能
 st.subheader("メニュー価格・在庫の編集")
@@ -59,7 +64,7 @@ if not filtered_df.empty:
     edited_df = st.data_editor(filtered_df, num_rows="dynamic", key="menu_editor")
 else:
     edited_df = pd.DataFrame()
-    st.info("データがありません。")
+    st.info("データがありません。Supabaseの 'menu_prices' テーブルにデータを登録してください。")
 
 # 3. 更新ボタン
 if st.button("変更を保存する") and not edited_df.empty:
