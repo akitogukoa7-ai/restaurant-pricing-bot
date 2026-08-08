@@ -43,8 +43,8 @@ with st.sidebar:
 
 st.title("🍽️ 飲食店メニュー価格最適化ロボット")
 
-# 1. データの取得（テーブル名を「メニュー価格」に変更）
-response = supabase.table("メニュー価格").select("*").execute()
+# 1. データの取得（テーブル名を「menu_prices」に変更）
+response = supabase.table("menu_prices").select("*").execute()
 df = pd.DataFrame(response.data)
 
 # 2. 検索・フィルター機能
@@ -64,7 +64,7 @@ else:
 # 3. 更新ボタン
 if st.button("変更を保存する") and not edited_df.empty:
     for index, row in edited_df.iterrows():
-        supabase.table("メニュー価格").update({
+        supabase.table("menu_prices").update({
             "base_price": int(row['base_price']),
             "current_price": int(row['current_price']),
             "stock_count": int(row['stock_count'])
