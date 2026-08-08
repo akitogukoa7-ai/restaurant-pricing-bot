@@ -32,26 +32,29 @@ menu_response = supabase.table("menu_prices").select("*").execute()
 menu_rows = menu_response.data
 
 for row in menu_rows:
-    item_id = row['id']
-    item_name = row['item_name']
-    base_price = row['base_price']
-    stock_count = row['stock_count']
-    expiry_days = row['expiry_days']
+    item_id = row.get('id')
+    item_name = row.get('item_name', '不明')
+    base_price = row.get('base_price', 1000)
+    stock_count = row.get('stock_count', 0)
+    expiry_days = row.get('expiry_days', 7)
 
     predicted_sales = 5 
 
-    # 価格決定AIロジック
-    if stock_count > predicted_sales * 1.5 and expiry_days <= 2:
+    # 価格決定AIロジック（緊急度の高い順に評価）
+    if expiry_days <= 1:
+        new_price = int(base_price * 0.5)
+        reason = "本日期限切れ間近のためAIが半額に自動調整"
+    elif stock_count > predicted_sales * 1.5 and expiry_days <= 2:
         new_price = int(base_price * 0.8)
-        reason = "在庫過多＆期限間近のためAIが自動値下げ"
+        reason = "在庫過多＆期限間近のためAIが20%OFFに自動値下げ"
     elif stock_count > predicted_sales * 2:
         new_price = int(base_price * 0.9)
-        reason = "在庫が多いためAIが微調整値下げ"
+        reason = "在庫が多いためAIが10%OFFに微調整値下げ"
     else:
         new_price = base_price
         reason = "適正価格を維持"
 
-    # Supabaseを更新
+    # Supabaseの current_price を更新
     supabase.table("menu_prices").update({"current_price": new_price}).eq("id", item_id).execute()
     print(f"更新: {item_name} -> {new_price}円 ({reason})")
 
