@@ -1,28 +1,28 @@
-name: Bot Runner
+name: ボット 2号機を実行
 
 on:
   schedule:
-    - cron: '0 23 * * *'
-  workflow_dispatch:
+    - cron: '0 23 * * *' # 毎日日本時間 朝8:00（UTC 23:00）に実行
+  workflow_dispatch: # 手動でも実行できるようにする
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: チェックアウトコード
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Pythonをセットアップする
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: Install dependencies
+      - name: 依存関係をインストールします
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run bot
+      - name: main.pyを実行します。
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
